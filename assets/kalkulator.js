@@ -39,17 +39,35 @@ function doohCalculator() {
             }
 
             const contacts = finalEbl * 3.5;
-            const sortedTiers = [...this.settings.tiers].sort((a, b) => b.minBudget - a.minBudget);
-            let appliedTier = sortedTiers[sortedTiers.length - 1];
-            let finalBudget = finalEbl * (appliedTier.rateCent / 100);
 
-            for (let tier of sortedTiers) {
-                const cost = finalEbl * (tier.rateCent / 100);
-                if (cost >= tier.minBudget) { appliedTier = tier; finalBudget = cost; break; }
+            // -------------------------------------------------------
+            // TIER-LOGIK (FIXED)
+            // Sortiere Tiers aufsteigend nach minBudget (S → XL).
+            // Berechne fuer jeden Tier das Bruttobudget mit dessen Rate.
+            // Waehle den hoechsten Tier, bei dem das berechnete Budget
+            // >= minBudget des naechsthoeheren Tiers liegt – also den
+            // guenstigsten qualifizierten Tier fuer den Kunden.
+            // Konkret: iteriere von hoeherem zu niedrigerem Tier (XL→S),
+            // nimm den ersten bei dem finalEbl * rateCent/100 >= minBudget.
+            // -------------------------------------------------------
+            const sortedDesc = [...this.settings.tiers].sort((a, b) => b.minBudget - a.minBudget);
+            let appliedTier = sortedDesc[sortedDesc.length - 1]; // Fallback: guenstigster Tier (S)
+            for (let tier of sortedDesc) {
+                const budgetAtThisRate = finalEbl * (tier.rateCent / 100);
+                if (budgetAtThisRate >= tier.minBudget) {
+                    appliedTier = tier;
+                    break;
+                }
             }
+            const finalBudget = finalEbl * (appliedTier.rateCent / 100);
 
-            this.result = { days, finalEbl, isCapped, isRealisierbar, contacts,
-                tierName: appliedTier.name, rateCent: appliedTier.rateCent, budget: finalBudget, recommendation };
+            this.result = {
+                days, finalEbl, isCapped, isRealisierbar, contacts,
+                tierName: appliedTier.name,
+                rateCent: appliedTier.rateCent,
+                budget: finalBudget,
+                recommendation
+            };
         },
 
         calculateWorkdays(start, end) {
